@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <title>井字3x3小游戏</title>
+    <meta charset="UTF-8">
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            background-color: #BB8FA9;
+        }
+        canvas {
+            margin: 10px;
+            border: 2px solid #000;
+            background-color: #BB8FA9;
+        }
+        #box {
+            display: inline-block;
+            position: absolute;
+            margin-top: 10px;
+        }
+        span {
+            font-size: 20px;
+            display: inline-block;
+            height: 50px;
+        }
+        input {
+            margin-top: 50px;
+            display: block;
+            width: 100px;
+            height: 50px;
+            border-radius: 12px;
+            font-size: 20px;
+            background-color: #0099cc;
+            box-shadow: 2px 2px 1px black;
+        }
+    </style>
+</head>
+<body>
+<canvas width="150" height="150" id="canvas">
+    您的浏览器不支持canvas，请升级到最新的浏览器
+</canvas>
+<div id="box">
+    <span id="txt"></span>
+    <input type="button" id="btn" value="重新开始"/>
+</div>
+
+<script>
+    var flag = true; //true代表红棋下的棋子，false代表黑棋下的棋子
+    var isWin = false; //判断是否结束，true结束，false没有结束
+    var step = 50;  //设置每个格子的宽高都是50
+
+    var txt = document.getElementById("txt");
+    var btn = document.getElementById("btn");
+    var cas = document.getElementById("canvas");// 获取画布对象
+    var ctx = cas.getContext("2d");    //画布上下文
+
+//    画红棋
+    function redCheck(x,y){
+        ctx.beginPath();//每一次绘制之前，都重置路径
+        ctx.arc(x, y, 15, 0, 2*Math.PI);
+        ctx.stroke();
+        ctx.fillStyle = "red";
+        ctx.fill();
+    }
+
+//    画黑棋
+    function blackCheck(x,y) {
+        ctx.beginPath();//每一次绘制之前，都重置路径
+        ctx.arc(x, y, 15, 0, 2 * Math.PI);
+        ctx.stroke();
+        ctx.fillStyle = "black";
+        ctx.fill();
+    }
+
+//    用二维数组来保存棋盘，0代表没有走过，1为红棋走过，2为黑棋走过
+    var arr = new Array(3);    //声明一个一维数组
+    for (var i = 0; i < 3; i++) {
+        arr[i] = new Array(3); //每个值再声明一个一维数组，这样就组成了一个二维数组
+        for (var j = 0; j < 3; j++) {
+            arr[i][j] = 0;
+        }
+    }
+
+    //绘制棋盘
+    function drawLine() {
+        ctx.beginPath();//每一次绘制之前，都重置路径
+        for (var i = 0; i < cas.width / step; i++) {
+            // 画竖线
+            ctx.moveTo((i + 1) * step, 0);
+            ctx.lineTo((i + 1) * step, cas.height);
+            // 画横线
+            ctx.moveTo(0, (i + 1) * step);
+            ctx.lineTo(cas.width, (i + 1) * step);
+            ctx.stroke();
+        }
+    }
+    //获取鼠标点击的位置
+    cas.onclick = function (e) {
+        // 先判断游戏是否结束
+        if (isWin) {
+            alert("游戏已经结束，请刷新重新开始！");
+            return 0;
+        }
+        //判断棋子显示的地方，四条边上不显示棋子，
+        var x = e.offsetX / 50;
+        var y = e.offsetY / 50;
+
+        //进行取整来确定棋子最终显示的区域
+        x = parseInt(x);
+        y = parseInt(y);
+        //如果超出棋盘或者在棋盘边界直接返回，边界上不能画棋子
+        if(x < 0 || x >= 3 || y < 0 || y >= 3) {
+            return;
+        }
+        //进行判断该位置是否已经显示过棋子
+        if (arr[x][y] != 0) {
+            alert("你不能在这个位置下棋");
+            return;
+        }
+        // 判断是显示黑棋还是红棋
+        if (flag) {//红棋
+            flag = false; //将标志置为false,表示下次为黑棋
+            drawChess(1, x, y); //调用函数来画棋子
+        } else {//黑棋
+            flag = true; //将标志置为true,表示下次为红棋
+            drawChess(2, x, y); //调用函数来画棋子
+        }
+    }
+    //画棋子
+    function drawChess(num, x, y) {
+        //根据x和y确定圆心位置
+        var x0 = x * step + 25;
+        var y0 = y * step + 25;
+        if (num == 1) {
+            //绘制红棋
+            redCheck(x0, y0);
+            arr[x][y] = 1;  //红棋
+        } else if (num == 2) {
+            // 绘制黑棋
+            blackCheck(x0, y0);
+            arr[x][y] = 2;  //黑棋
+        }
+        //调用函数判断输赢
+        judge(num, x, y);
+    }
+    //判断输赢
+    function judge(num, x, y) {
+        var n1 = 0, //左右方向
+            n2 = 0, //上下方向
+            n3 = 0, //左上到右下方向
+            n4 = 0; //右上到左下方向
+        //====================左右方向=============================
+        //先从点击的位置向左寻找，相同颜色的棋子n1自加，直到不是相同颜色的棋子，则跳出循环
+        for (var i = x; i >= 0; i--) {
+            if (arr[i][y] != num) {
+                break;
+            }
+            n1++;
+        }
+        //然后从点击的位置向右下一个位置寻找，相同颜色的棋子n1自加，直到不是相同颜色的棋子，则跳出循环
+        for (var i = x + 1; i < 3; i++) {
+            if (arr[i][y] != num) {
+                break;
+            }
+            n1++;
+        }
+        //======================上下方向============================
+        for (var i = y; i >= 0; i--) {
+            if (arr[x][i] != num) {
+                break;
+            }
+            n2++;
+        }
+        for (var i = y + 1; i < 3; i++) {
+            if (arr[x][i] != num) {
+                break;
+            }
+            n2++;
+        }
+        //================左上到右下斜方向==========================
+        for(var i = x, j = y; i >=0, j >= 0; i--, j--) {
+            if (i < 0 || j < 0 || arr[i][j] != num) {
+                break;
+            }
+            n3++;
+        }
+        for(var i = x+1, j = y+1; i < 3, j < 3; i++, j++) {
+            if (i >= 3 || j >= 3 || arr[i][j] != num) {
+                break;
+            }
+            n3++;
+        }
+        //================右上到左下斜方向==========================
+        for(var i = x, j = y; i >= 0, j < 3; i--, j++) {
+            if (i < 0 || j >= 3 || arr[i][j] != num) {
+                break;
+            }
+            n4++;
+        }
+        for(var i = x+1, j = y-1; i < 3, j >= 0; i++, j--) {
+            if (i >= 3 || j < 0 || arr[i][j] != num) {
+                break;
+            }
+            n4++;
+        }
+        if (n1 >= 3 || n2 >= 3 || n3 >= 3 || n4 >= 3) {
+            if (num == 1) {//红棋
+                txt.innerHTML = "红棋赢了，游戏结束！"
+            } else if (num == 2) {//黑棋
+                txt.innerHTML = "黑棋赢了，游戏结束！"
+            }
+            isWin = true;
+        }
+    }
+    //重新开始
+    btn.onclick = function() {
+        flag = true;
+        isWin = false;
+
+        for (var i = 0; i < 3; i++) {
+            for (var j = 0; j < 3; j++) {
+                arr[i][j] = 0;
+            }
+        }
+        ctx.clearRect(0, 0, 150, 150);
+        txt.innerHTML = "";
+        drawLine();
+    }
+    drawLine();
+</script>
+</body>
+</html>
